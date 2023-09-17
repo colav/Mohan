@@ -58,7 +58,7 @@ class Similarity:
         """
         self.es.indices.delete(index=index_name)
 
-    def search(self, title: str, authors: str, source: str, year: str,
+    def search_work(self, title: str, authors: str, source: str, year: str,
                volume: str, issue: str, page_start: str, page_end: str,
                ratio_thold: int = 90, partial_thold: int = 95, low_thold: int = 80):
         """
