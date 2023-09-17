@@ -146,14 +146,14 @@ class Similarity:
         if res["hits"]["total"]["value"] != 0:
             for i in res["hits"]["hits"]:
                 title2 = i["_source"]
-                for i in self.schema["title"].split("."):
-                    title2 = title2[i]
+                for j in self.schema["title"].split("."):
+                    title2 = title2[j]
                 source2 = i["_source"]
-                for i in self.schema["source"].split("."):
-                    source2 = source2[i]
+                for j in self.schema["source"].split("."):
+                    source2 = source2[j]
                 year2 = i["_source"]
-                for i in self.schema["year"].split("."):
-                    year2 = year2[i]
+                for j in self.schema["year"].split("."):
+                    year2 = year2[j]
 
                 value = ColavSimilarity(title, title2,
                                         source, source2,
