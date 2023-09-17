@@ -58,9 +58,19 @@ class Similarity:
         """
         self.es.indices.delete(index=index_name)
 
+    def insert_work(self, _id: str, work: dict):
+        """
+        Insert a work into the index.
+        Parameters:
+        -----------
+        _id: str id of the work (ex: mongodb id as string)
+        work: dict work to be inserted
+        """
+        return self.es.index(index=self.es_index,  id=_id, document=work)
+
     def search_work(self, title: str, authors: str, source: str, year: str,
-               volume: str, issue: str, page_start: str, page_end: str,
-               ratio_thold: int = 90, partial_thold: int = 95, low_thold: int = 80):
+                    volume: str, issue: str, page_start: str, page_end: str,
+                    ratio_thold: int = 90, partial_thold: int = 95, low_thold: int = 80):
         """
         Compare two papers to know if they are the same or not.
         Parameters:
