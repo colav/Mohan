@@ -158,7 +158,7 @@ class Similarity:
                 value = ColavSimilarity(title, title2,
                                         source, source2,
                                         year, year2,
-                                        ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=50)
+                                        ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
                 if value:
                     return i
             return None
