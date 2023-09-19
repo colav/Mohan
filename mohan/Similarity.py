@@ -1,6 +1,5 @@
 
-from mohan.ColavSimilarity import ColavSimilarity, parse_doi, parse_string
-from mohan.Schemas import kahi_works
+from mohan.ColavSimilarity import ColavSimilarity, parse_string
 from elasticsearch import Elasticsearch, __version__ as es_version
 from elasticsearch.helpers import bulk
 
@@ -8,7 +7,7 @@ from elasticsearch.helpers import bulk
 class Similarity:
     def __init__(self, es_index, es_uri: str = "http://localhost:9200",
                  es_auth: tuple = ('elastic', 'colav'),
-                 es_req_timeout: int = 120, schema=kahi_works):
+                 es_req_timeout: int = 120):
         """
         Initialize the Similarity class.
         Parameters:
@@ -30,7 +29,7 @@ class Similarity:
             self.es = Elasticsearch(
                 es_uri, basic_auth=auth, timeout=es_req_timeout)
         self.es_index = es_index
-        self.schema = schema
+        self.es_req_timeout = es_req_timeout
 
     def create_index(self, mapping: dict = None, recreate: bool = False):
         """
@@ -61,6 +60,20 @@ class Similarity:
     def insert_work(self, _id: str, work: dict):
         """
         Insert a work into the index.
+        work should have a dict structure like the next one.
+        work = {"title": "title of the work",
+                "authors": "authors of the work",
+                "source": "source of the work",
+                "year": "year of the work",
+                "volume": "volume of the work",
+                "issue": "issue of the work",
+                "page_start": "page start of the work",
+                "page_end": "page end of the work"}
+        every value is a string, including the year, volume, issue, page_start and page_end.
+
+        Additional fields such as doi, pmid, pmcid, etc. can be added to the work dict if needed,
+        but the search is over the previous fields.
+
         Parameters:
         -----------
         _id: str id of the work (ex: mongodb id as string)
@@ -68,7 +81,7 @@ class Similarity:
         """
         return self.es.index(index=self.es_index,  id=_id, document=work)
 
-    def search_work(self, title: str, authors: str, source: str, year: str,
+    def search_work(self, title: str, source: str, year: str,
                     volume: str, issue: str, page_start: str, page_end: str,
                     ratio_thold: int = 90, partial_thold: int = 95, low_thold: int = 80):
         """
@@ -77,8 +90,6 @@ class Similarity:
         -----------
         title: str 
                 title of the paper
-        authors: str 
-                authors of the paper
         source: str 
                 name of the journal in which the paper was published
         year: int 
@@ -137,15 +148,13 @@ class Similarity:
             "query": {
                 "bool": {
                     "should": [
-                        {"match": {self.schema["title"]: title}},
-                        # se tienen que truncar los autores
-                        {"match": {self.schema["authors"]: authors[0:100]}},
-                        {"match": {self.schema["source"]: source}},
-                        {"term":  {self.schema["year"]: year}},
-                        {"term":  {self.schema["volume"]: volume}},
-                        {"term":  {self.schema["issue"]: issue}},
-                        {"term":  {self.schema["page_start"]: page_start}},
-                        {"term":  {self.schema["page_end"]: page_end}},
+                        {"match": {"title": parse_string(title)}},
+                        {"match": {"source": source}},
+                        {"term":  {"year": year}},
+                        {"term":  {"volume": volume}},
+                        {"term":  {"issue": issue}},
+                        {"term":  {"page_start": page_start}},
+                        {"term":  {"page_end": page_end}},
                     ],
                 }
             },
@@ -155,22 +164,22 @@ class Similarity:
         res = self.es.search(index=self.es_index, **body)
         if res["hits"]["total"]["value"] != 0:
             for i in res["hits"]["hits"]:
-                title2 = i["_source"]
-                for j in self.schema["title"].split("."):
-                    title2 = title2[j]
-                source2 = i["_source"]
-                for j in self.schema["source"].split("."):
-                    source2 = source2[j]
-                year2 = i["_source"]
-                for j in self.schema["year"].split("."):
-                    year2 = year2[j]
-
-                value = ColavSimilarity(title, title2,
-                                        source, source2,
-                                        year, year2,
+                value = ColavSimilarity(title, i["_source"]["title"],
+                                        source, i["_source"]["source"],
+                                        year, i["_source"]["year"],
                                         ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
                 if value:
                     return i
             return None
         else:
             return None
+
+    def insert_bulk(self, entries: list, refresh=True):
+        """
+        Insert a bulk of works into the index.
+        Parameters:
+        -----------
+        entries: list 
+                list of works to be inserted
+        """
+        return bulk(self.es, entries, index=self.es_index, refresh=refresh, request_timeout=self.es_req_timeout)
