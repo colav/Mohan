@@ -29,7 +29,7 @@ pip install docker-compose
 `pip install mohan`
 
 # Usage
-This package was designed to be use as library,
+This package was designed to be used as library,
 you need import the class Similarity, to create an index,
 insert documents(works) and perform searches.
 
@@ -90,7 +90,7 @@ s.search_work(self, title=i["title"], source = i["host_venue"]["display_name"], 
 ```
 
 # License
-BSD-3-Clause License 
+BSD-3-Clause License
 
 # Links
 http://colav.udea.edu.co/

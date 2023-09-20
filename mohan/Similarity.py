@@ -42,7 +42,8 @@ class Similarity:
 
         """
         if recreate:
-            self.delete_index(self.es_index)
+            if self.es.indices.exists(index=self.es_index):
+                self.delete_index(self.es_index)
         if mapping:
             self.es.indices.create(index=self.es_index, body=mapping)
         else:
