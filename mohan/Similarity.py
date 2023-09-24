@@ -30,16 +30,19 @@ class Similarity:
                 es_uri, basic_auth=auth, timeout=es_req_timeout)
         self.es_index = es_index
         self.es_req_timeout = es_req_timeout
+        self.ensure_index()
 
-    def create_index(self, mapping: dict = None, recreate: bool = False):
+    def ensure_index(self, mapping: dict = None, recreate: bool = False):
         """
         Create an index.
         Parameters:
         -----------
-        index_name: str name of the index
-        mapping: dict mapping of the index
-        recreate: bool whether to recreate the index or not
-
+        index_name: str
+            name of the index
+        mapping: dict
+            mapping of the index
+        recreate: bool
+            whether to recreate the index or not
         """
         if recreate:
             if self.es.indices.exists(index=self.es_index):
@@ -84,7 +87,8 @@ class Similarity:
 
     def search_work(self, title: str, source: str, year: str,
                     volume: str, issue: str, page_start: str, page_end: str,
-                    ratio_thold: int = 90, partial_thold: int = 95, low_thold: int = 80):
+                    use_es_thold: bool = False, es_thold_low: int = 10, es_thold_high: int = 180,
+                    ratio_thold: int = 90, partial_thold: int = 92, low_thold: int = 81, parse_title: bool = True):
         """
         Compare two papers to know if they are the same or not.
         Parameters:
@@ -103,13 +107,22 @@ class Similarity:
                 first page of the paper
         page_end: int 
                 last page of the paper
+        use_es_thold: bool
+                whether to use the elastic search score threshold or not
+        es_thold_low: int
+                elastic search score threshold to discard some results with lower score values
+        es_thold_high: int
+                elastic search score threshold to return the best hit
         ratio_thold: int 
                 threshold to compare through ratio function in thefuzz library
         partial_ratio_thold: int 
                 threshold to compare through partial_ratio function in thefuzz library
-        low_thold: int 
-            threshold to discard some results with lower score values
-        es_request_timeout: int elastic search request timeout
+        low_thold: int
+                threshold to discard some results with lower score values
+        es_request_timeout: int
+                elastic search request timeout
+        parse_title: bool
+                whether to parse the title or not (parse title helps to improve the results)
 
         Returns:
         --------
@@ -144,13 +157,20 @@ class Similarity:
 
         if not isinstance(page_end, str):
             page_end = ""
-
+        if parse_title:
+            title = parse_string(title)
         body = {
             "query": {
                 "bool": {
                     "should": [
-                        {"match": {"title": parse_string(title)}},
-                        {"match": {"source": source}},
+                        {"match": {"title":  {
+                            "query": title,
+                            "operator": "OR"
+                        }}},
+                        {"match": {"source":  {
+                            "query": source,
+                            "operator": "AND"
+                        }}},
                         {"term":  {"year": year}},
                         {"term":  {"volume": volume}},
                         {"term":  {"issue": issue}},
@@ -159,11 +179,18 @@ class Similarity:
                     ],
                 }
             },
-            "size": 10,
+            "size": 20,
         }
 
         res = self.es.search(index=self.es_index, **body)
         if res["hits"]["total"]["value"] != 0:
+            best_hit = res["hits"]["hits"][0]
+            if use_es_thold:
+                if best_hit["_score"] < es_thold_low:
+                    return None
+                if best_hit["_score"] >= es_thold_high:
+                    return best_hit
+
             for i in res["hits"]["hits"]:
                 value = ColavSimilarity(title, i["_source"]["title"],
                                         source, i["_source"]["source"],
