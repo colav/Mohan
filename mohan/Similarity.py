@@ -47,6 +47,8 @@ class Similarity:
         if recreate:
             if self.es.indices.exists(index=self.es_index):
                 self.delete_index(self.es_index)
+        if self.es.indices.exists(index=self.es_index):
+            return
         if mapping:
             self.es.indices.create(index=self.es_index, body=mapping)
         else:
@@ -66,7 +68,6 @@ class Similarity:
         Insert a work into the index.
         work should have a dict structure like the next one.
         work = {"title": "title of the work",
-                "authors": "authors of the work",
                 "source": "source of the work",
                 "year": "year of the work",
                 "volume": "volume of the work",
