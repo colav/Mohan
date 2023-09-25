@@ -83,7 +83,7 @@ res = s.insert_work(_id=str(i["_id"]), work=work)
 ### example performing a search
 
 ```py
-res = s.search_work(self, title=i["title"], source = i["host_venue"]["display_name"], year = i["publication_year"],
+res = s.search_work(title=i["title"], source = i["host_venue"]["display_name"], year = i["publication_year"],
                     volume = i["biblio"]["volume"], issue = i["biblio"]["issue"], page_start = i["biblio"]["first_page"],
                     page_end = i["biblio"]["last_page"])
 
