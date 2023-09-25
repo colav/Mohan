@@ -43,9 +43,6 @@ from mohan.Similarity import Similarity
 s = Similarity("openalex_index",es_uri= "http://localhost:9200",
                  es_auth = ('elastic', 'colav'))
 
-# create the index, you can set recreate
-s.create_index(recreate: bool = False)
-
 #taking openalex as example.
 openalex = list(MongoClient()["openalexco"]["works"].find())
 
