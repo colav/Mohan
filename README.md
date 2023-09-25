@@ -68,8 +68,9 @@ for i in openalex:
     if len(es_entries) == bulk_size:
         s.bulk(es_entries)
         es_entries = []
-
-# example inserting one document from openalex
+```
+### example inserting one document from openalex
+```py
 work = {"title": i["title"],
         "source": i["host_venue"]["display_name"],
         "year": i["publication_year"],
@@ -77,10 +78,12 @@ work = {"title": i["title"],
         "issue": i["biblio"]["issue"],
         "page_start": i["biblio"]["first_page"],
         "page_end": i["biblio"]["last_page"]}
-s.insert_work(_id=str(i["_id"]), work=work)
+res = s.insert_work(_id=str(i["_id"]), work=work)
+```
+### example performing a search
 
-# example performing a search
-s.search_work(self, title=i["title"], source = i["host_venue"]["display_name"], year = i["publication_year"],
+```py
+res = s.search_work(self, title=i["title"], source = i["host_venue"]["display_name"], year = i["publication_year"],
                     volume = i["biblio"]["volume"], issue = i["biblio"]["issue"], page_start = i["biblio"]["first_page"],
                     page_end = i["biblio"]["last_page"])
 
