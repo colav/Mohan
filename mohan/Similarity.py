@@ -88,10 +88,12 @@ class Similarity:
 
     def search_work(self, title: str, source: str, year: str,
                     volume: str, issue: str, page_start: str, page_end: str,
-                    use_es_thold: bool = False, es_thold_low: int = 10, es_thold_high: int = 180,
+                    use_es_thold: bool = True, es_thold: int = 130,
                     ratio_thold: int = 90, partial_thold: int = 92, low_thold: int = 81, parse_title: bool = True):
         """
         Compare two papers to know if they are the same or not.
+        By default the function uses the elastic search score threshold to return the best hit.
+
         Parameters:
         -----------
         title: str 
@@ -110,9 +112,7 @@ class Similarity:
                 last page of the paper
         use_es_thold: bool
                 whether to use the elastic search score threshold or not
-        es_thold_low: int
-                elastic search score threshold to discard some results with lower score values
-        es_thold_high: int
+        es_thold: int
                 elastic search score threshold to return the best hit
         ratio_thold: int 
                 threshold to compare through ratio function in thefuzz library
@@ -187,11 +187,10 @@ class Similarity:
         if res["hits"]["total"]["value"] != 0:
             best_hit = res["hits"]["hits"][0]
             if use_es_thold:
-                if best_hit["_score"] < es_thold_low:
-                    return None
-                if best_hit["_score"] >= es_thold_high:
+                if best_hit["_score"] >= es_thold:
                     return best_hit
-
+                else:
+                    return None
             for i in res["hits"]["hits"]:
                 value = ColavSimilarity(title, i["_source"]["title"],
                                         source, i["_source"]["source"],
