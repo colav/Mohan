@@ -81,7 +81,7 @@ def main():
         # Dependent packages (distributions)
         install_requires=[
             "elasticsearch",
-            "thefuzz",
+            "hunahpu",
             "unidecode"
         ],
     )

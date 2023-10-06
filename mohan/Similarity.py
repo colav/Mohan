@@ -1,5 +1,5 @@
 
-from mohan.ColavSimilarity import ColavSimilarity, parse_string
+from hunahpu.ColavSimilarity import ColavSimilarity, parse_string
 from elasticsearch import Elasticsearch, __version__ as es_version
 from elasticsearch.helpers import bulk
 
@@ -70,6 +70,7 @@ class Similarity:
         work = {"title": "title of the work",
                 "source": "source of the work",
                 "year": "year of the work",
+                "authors": "list of authors, separated by commas and maximum 5 authors",
                 "volume": "volume of the work",
                 "issue": "issue of the work",
                 "page_start": "page start of the work",
@@ -77,7 +78,7 @@ class Similarity:
         every value is a string, including the year, volume, issue, page_start and page_end.
 
         Additional fields such as doi, pmid, pmcid, etc. can be added to the work dict if needed,
-        but the search is over the previous fields.
+        but the search is over the previous fields defined in work.
 
         Parameters:
         -----------
@@ -86,9 +87,9 @@ class Similarity:
         """
         return self.es.index(index=self.es_index,  id=_id, document=work)
 
-    def search_work(self, title: str, source: str, year: str,
+    def search_work(self, title: str, source: str, year: str, authors: str,
                     volume: str, issue: str, page_start: str, page_end: str,
-                    use_es_thold: bool = True, es_thold: int = 130,
+                    use_es_thold: bool = False, es_thold: int = 130,
                     ratio_thold: int = 90, partial_thold: int = 92, low_thold: int = 81, parse_title: bool = True):
         """
         Compare two papers to know if they are the same or not.
@@ -102,6 +103,8 @@ class Similarity:
                 name of the journal in which the paper was published
         year: int 
                 year in which the paper was published
+        authors: str
+                authors of the paper, separated by commas and maximum 5 authors
         volume: int 
                 volume of the journal in which the paper was published
         issue: int 
@@ -167,6 +170,10 @@ class Similarity:
                         {"match": {"title":  {
                             "query": title,
                             "operator": "OR"
+                        }}},
+                        {"match": {"authors":  {
+                            "query": authors,
+                            "operator": "AND"
                         }}},
                         {"match": {"source":  {
                             "query": source,
