@@ -2,6 +2,7 @@
 from hunahpu.Similarity import ColavSimilarity, parse_string
 from elasticsearch import Elasticsearch, __version__ as es_version
 from elasticsearch.helpers import bulk
+import sys
 
 
 class Similarity:
@@ -103,8 +104,8 @@ class Similarity:
                 name of the journal in which the paper was published
         year: int 
                 year in which the paper was published
-        authors: str
-                authors of the paper, separated by commas and maximum 5 authors
+        authors: list
+                authors of the paper, list of maximum 5 authors
         volume: int 
                 volume of the journal in which the paper was published
         issue: int 
@@ -137,6 +138,19 @@ class Similarity:
 
         if not isinstance(source, str):
             source = ""
+        authors_list = []
+        if isinstance(authors, list):
+            for author in authors:
+                authors_list.append(
+                    {"match": {"authors":  {
+                        "query": author,
+                        "operator": "AND"
+                    }}}
+                )
+        else:
+            print(
+                "Error, Authors should be list, if you dont have authors, please use []")
+            sys.exit(1)
 
         if isinstance(volume, int):
             volume = str(volume)
@@ -171,10 +185,6 @@ class Similarity:
                             "query": title,
                             "operator": "OR"
                         }}},
-                        {"match": {"authors":  {
-                            "query": authors,
-                            "operator": "AND"
-                        }}},
                         {"match": {"source":  {
                             "query": source,
                             "operator": "AND"
@@ -189,6 +199,7 @@ class Similarity:
             },
             "size": 20,
         }
+        body["query"]["bool"]["should"].extend(authors_list)
 
         res = self.es.search(index=self.es_index, **body)
         if res["hits"]["total"]["value"] != 0:
@@ -203,12 +214,13 @@ class Similarity:
                 paper1["title"] = title
                 paper1["journal"] = source
                 paper1["year"] = year
-                
+
                 paper2 = {}
                 paper2["title"] = i["_source"]["title"]
                 paper2["journal"] = i["_source"]["source"]
                 paper2["year"] = i["_source"]["year"]
-                value = ColavSimilarity(paper1, paper2, ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
+                value = ColavSimilarity(
+                    paper1, paper2, ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
                 if value:
                     return i
             return None
