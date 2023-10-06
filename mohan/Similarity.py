@@ -1,5 +1,5 @@
 
-from hunahpu.ColavSimilarity import ColavSimilarity, parse_string
+from hunahpu.Similarity import ColavSimilarity, parse_string
 from elasticsearch import Elasticsearch, __version__ as es_version
 from elasticsearch.helpers import bulk
 
@@ -199,10 +199,16 @@ class Similarity:
                 else:
                     return None
             for i in res["hits"]["hits"]:
-                value = ColavSimilarity(title, i["_source"]["title"],
-                                        source, i["_source"]["source"],
-                                        year, i["_source"]["year"],
-                                        ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
+                paper1 = {}
+                paper1["title"] = title
+                paper1["journal"] = source
+                paper1["year"] = year
+                
+                paper2 = {}
+                paper2["title"] = i["_source"]["title"]
+                paper2["journal"] = i["_source"]["source"]
+                paper2["year"] = i["_source"]["year"]
+                value = ColavSimilarity(paper1, paper2, ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
                 if value:
                     return i
             return None
