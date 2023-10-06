@@ -38,9 +38,12 @@ The next example is with openalex but it can be used with any dataset.
 ```py
 
 from mohan.Similarity import Similarity
+from pymongo import MongoClient
+
+es_index = "openalex_index"
 
 #creating the instance
-s = Similarity("openalex_index",es_uri= "http://localhost:9200",
+s = Similarity(es_index,es_uri= "http://localhost:9200",
                  es_auth = ('elastic', 'colav'))
 
 #taking openalex as example.
@@ -60,13 +63,18 @@ for i in openalex:
     work["issue"] = i["biblio"]["issue"]
     work["first_page"] = i["biblio"]["first_page"]
     work["last_page"] = i["biblio"]["last_page"]
-
+    authors = []
+    for author in i['authorships']:
+        if "display_name" in author["author"].keys():
+            authors.append(author["author"]["display_name"])
+    work["authors"] = authors
+    
     entry = {"_index": es_index,
                 "_id": str(i["_id"]),
                 "_source": work}
     es_entries.append(entry)
     if len(es_entries) == bulk_size:
-        s.bulk(es_entries)
+        s.insert_bulk(es_entries)
         es_entries = []
 ```
 ### example inserting one document from openalex
@@ -74,6 +82,7 @@ for i in openalex:
 work = {"title": i["title"],
         "source": i["host_venue"]["display_name"],
         "year": i["publication_year"],
+        "authors": authors,
         "volume": i["biblio"]["volume"],
         "issue": i["biblio"]["issue"],
         "page_start": i["biblio"]["first_page"],
@@ -84,10 +93,16 @@ res = s.insert_work(_id=str(i["_id"]), work=work)
 
 ```py
 res = s.search_work(title=i["title"], source = i["host_venue"]["display_name"], year = i["publication_year"],
-                    volume = i["biblio"]["volume"], issue = i["biblio"]["issue"], page_start = i["biblio"]["first_page"],
-                    page_end = i["biblio"]["last_page"])
+                    authors = authors, volume = i["biblio"]["volume"], issue = i["biblio"]["issue"], 
+                    page_start = i["biblio"]["first_page"], page_end = i["biblio"]["last_page"])
 
 ```
+
+NOTES:
+* The search is performed using the same fields as the insert_work method.
+* The title field can be an array when inserting documents, but it will be used as a string when searching documents.
+* Authors field have to be an array when inserting/searching documents.
+* Extra fields can be added to the insert methods, but they will not be used for the search. Only the fields (title, source, year, authors, volume, issue, page_start, page_end) will be used for the search.
 
 # License
 BSD-3-Clause License
