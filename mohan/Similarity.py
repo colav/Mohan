@@ -86,6 +86,9 @@ class Similarity:
         _id: str id of the work (ex: mongodb id as string)
         work: dict work to be inserted
         """
+        for i in work.keys():
+            if i != "authors":
+                work[i]=str(work[i])
         return self.es.index(index=self.es_index,  id=_id, document=work)
 
     def search_work(self, title: str, source: str, year: str, authors: str,
@@ -138,6 +141,10 @@ class Similarity:
 
         if not isinstance(source, str):
             source = ""
+
+        if isinstance(year, int):
+            year = str(year)
+
         authors_list = []
         if isinstance(authors, list):
             for author in authors:
