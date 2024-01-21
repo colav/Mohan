@@ -88,7 +88,7 @@ class Similarity:
         """
         for i in work.keys():
             if i != "authors":
-                work[i]=str(work[i])
+                work[i] = str(work[i])
         return self.es.index(index=self.es_index,  id=_id, document=work)
 
     def search_work(self, title: str, source: str, year: str, authors: str,
