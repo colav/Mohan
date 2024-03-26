@@ -54,10 +54,15 @@ bulk_size = 100
 
 es_entries = []
 counter = 0
-for i in openalex:
+or i in openalex:
     work = {}
     work["title"] = i["title"]
-    work["source"] = i["host_venue"]["display_name"]
+    if "primary_location" in i.keys() and i["primary_location"]:
+        if i["primary_location"]["source"]:
+            work["source"] = i["primary_location"]["source"]["display_name"]
+        work["source"] = ""
+    else:
+        work["source"] = ""
     work["year"] = i["publication_year"]
     work["volume"] = i["biblio"]["volume"]
     work["issue"] = i["biblio"]["issue"]
