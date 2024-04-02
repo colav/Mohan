@@ -94,7 +94,7 @@ class Similarity:
     def search_work(self, title: str, source: str, year: str, authors: str,
                     volume: str, issue: str, page_start: str, page_end: str,
                     use_es_thold: bool = False, es_thold: int = 130,
-                    ratio_thold: int = 90, partial_thold: int = 92, low_thold: int = 81, parse_title: bool = True):
+                    ratio_thold: int = 90, partial_thold: int = 92, low_thold: int = 81, parse_title: bool = True, hits=1):
         """
         Compare two papers to know if they are the same or not.
         By default the function uses the elastic search score threshold to return the best hit.
@@ -131,7 +131,8 @@ class Similarity:
                 elastic search request timeout
         parse_title: bool
                 whether to parse the title or not (parse title helps to improve the results)
-
+        hits: int
+                number of hits to return, only if use_es_thold is True
         Returns:
         --------
         record: dict when the papers are (potentially) the same, None otherwise.
@@ -210,12 +211,12 @@ class Similarity:
 
         res = self.es.search(index=self.es_index, **body)
         if res["hits"]["total"]["value"] != 0:
-            best_hit = res["hits"]["hits"][0]
             if use_es_thold:
-                if best_hit["_score"] >= es_thold:
-                    return best_hit
-                else:
-                    return None
+                hits_found = []
+                for hit in res["hits"]["hits"][0:hits]:
+                    if hit["_score"] >= es_thold:
+                        hits_found.append(hit)
+                return hits_found
             for i in res["hits"]["hits"]:
                 paper1 = {}
                 paper1["title"] = title
@@ -224,8 +225,13 @@ class Similarity:
 
                 paper2 = {}
                 paper2["title"] = i["_source"]["title"]
-                paper2["journal"] = i["_source"]["source"]
-                paper2["year"] = i["_source"]["year"]
+                paper2["journal"] = i["_source"]["source"] if "source" in i["_source"].keys() else ""
+                paper2["year"] = i["_source"]["year"] if "year" in i["_source"].keys() else ""
+                if "year" not in i["_source"].keys():
+                    print(i)
+                if "source" not in i["_source"].keys():
+                    print(i)
+
                 value = ColavSimilarity(
                     paper1, paper2, ratio_thold=ratio_thold, partial_thold=partial_thold, low_thold=low_thold)
                 if value:
