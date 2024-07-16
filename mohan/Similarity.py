@@ -33,6 +33,12 @@ class Similarity:
         self.es_req_timeout = es_req_timeout
         self.ensure_index()
 
+    def refresh_index(self):
+        """
+        Refresh the index.
+        """
+        self.es.indices.refresh(index=self.es_index)
+
     def ensure_index(self, mapping: dict = None, recreate: bool = False):
         """
         Create an index.
@@ -89,7 +95,9 @@ class Similarity:
         for i in work.keys():
             if i != "authors":
                 work[i] = str(work[i])
-        return self.es.index(index=self.es_index,  id=_id, document=work)
+        response = self.es.index(index=self.es_index,  id=_id, document=work)
+        self.refresh_index()
+        return response
 
     def search_work(self, title: str, source: str, year: str, authors: str,
                     volume: str, issue: str, page_start: str, page_end: str,
@@ -225,8 +233,10 @@ class Similarity:
 
                 paper2 = {}
                 paper2["title"] = i["_source"]["title"]
-                paper2["journal"] = i["_source"]["source"] if "source" in i["_source"].keys() else ""
-                paper2["year"] = i["_source"]["year"] if "year" in i["_source"].keys() else ""
+                paper2["journal"] = i["_source"]["source"] if "source" in i["_source"].keys(
+                ) else ""
+                paper2["year"] = i["_source"]["year"] if "year" in i["_source"].keys(
+                ) else ""
                 if "year" not in i["_source"].keys():
                     print(i)
                 if "source" not in i["_source"].keys():
@@ -248,4 +258,7 @@ class Similarity:
         entries: list 
                 list of works to be inserted
         """
-        return bulk(self.es, entries, index=self.es_index, refresh=refresh, request_timeout=self.es_req_timeout)
+        response = bulk(self.es, entries, index=self.es_index,
+                        refresh=refresh, request_timeout=self.es_req_timeout)
+        self.refresh_index()
+        return response
