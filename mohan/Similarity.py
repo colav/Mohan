@@ -8,7 +8,10 @@ import sys
 class Similarity:
     def __init__(self, es_index, es_uri: str = "http://localhost:9200",
                  es_auth: tuple = ('elastic', 'colav'),
-                 es_req_timeout: int = 120):
+                 es_req_timeout: int = 120,
+                 es_retry_on_timeout: bool = True,  # enable timeout
+                 es_max_retries: int = 5,
+                 ):
         """
         Initialize the Similarity class.
         Parameters:
@@ -25,10 +28,10 @@ class Similarity:
         auth = es_auth
         if es_version[0] < 8:
             self.es = Elasticsearch(
-                es_uri, http_auth=auth, timeout=es_req_timeout)
+                es_uri, http_auth=auth, timeout=es_req_timeout, retry_on_timeout=es_retry_on_timeout, max_retries=es_max_retries)
         else:
             self.es = Elasticsearch(
-                es_uri, basic_auth=auth, timeout=es_req_timeout)
+                es_uri, basic_auth=auth, timeout=es_req_timeout, retry_on_timeout=es_retry_on_timeout, max_retries=es_max_retries)
         self.es_index = es_index
         self.es_req_timeout = es_req_timeout
         self.ensure_index()
@@ -262,3 +265,9 @@ class Similarity:
                         refresh=refresh, request_timeout=self.es_req_timeout)
         self.refresh_index()
         return response
+
+    def close(self):
+        """
+        Close the connection to the elastic search server.
+        """
+        self.es.close()
