@@ -1,8 +1,8 @@
-
 from hunahpu.Similarity import ColavSimilarity, parse_string
 from elasticsearch import Elasticsearch, __version__ as es_version
 from elasticsearch.helpers import bulk
 import sys
+from unidecode import unidecode
 
 
 class Similarity:
@@ -35,6 +35,22 @@ class Similarity:
         self.es_index = es_index
         self.es_req_timeout = es_req_timeout
         self.ensure_index()
+
+    def str_normilize(self, word):
+        """
+        Normalize a string to lowercase and remove accents.
+
+        Parameters
+        ----------
+        word : str
+            string to be normalized.
+
+        Returns
+        -------
+        str
+            normalized string.
+        """
+        return unidecode(word).lower().strip().replace(".", "")
 
     def refresh_index(self):
         """
@@ -151,6 +167,8 @@ class Similarity:
         if not isinstance(title, str):
             title = ""
 
+        title = self.str_normilize(title)
+
         if not isinstance(source, str):
             source = ""
 
@@ -162,7 +180,7 @@ class Similarity:
             for author in authors:
                 authors_list.append(
                     {"match": {"authors":  {
-                        "query": author,
+                        "query": self.str_normilize(author),
                         "operator": "AND"
                     }}}
                 )
