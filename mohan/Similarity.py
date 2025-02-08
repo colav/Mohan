@@ -113,7 +113,10 @@ class Similarity:
         """
         for i in work.keys():
             if i != "authors":
-                work[i] = str(work[i])
+                work[i] = self.str_normilize(str(work[i]))
+            else:
+                for i in range(len(work["authors"])):
+                    work["authors"][i] = self.str_normilize(work["authors"][i])
         response = self.es.index(index=self.es_index,  id=_id, document=work)
         self.refresh_index()
         return response
@@ -279,6 +282,15 @@ class Similarity:
         entries: list 
                 list of works to be inserted
         """
+        for entry in entries:
+            for i in entry["_source"].keys():
+                if i == "authors":
+                    for j in range(len(entry["_source"][i])):
+                        entry["_source"]["authors"][j] = self.str_normilize(
+                            entry["_source"]["authors"][j])
+                if i in ["title", "source"]:
+                    entry["_source"][i] = self.str_normilize(
+                        entry["_source"][i])
         response = bulk(self.es, entries, index=self.es_index,
                         refresh=refresh, request_timeout=self.es_req_timeout)
         self.refresh_index()
