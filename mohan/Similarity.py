@@ -1,8 +1,8 @@
-
 from hunahpu.Similarity import ColavSimilarity, parse_string
 from elasticsearch import Elasticsearch, __version__ as es_version
 from elasticsearch.helpers import bulk
 import sys
+from unidecode import unidecode
 
 
 class Similarity:
@@ -35,6 +35,22 @@ class Similarity:
         self.es_index = es_index
         self.es_req_timeout = es_req_timeout
         self.ensure_index()
+
+    def str_normilize(self, word):
+        """
+        Normalize a string to lowercase and remove accents.
+
+        Parameters
+        ----------
+        word : str
+            string to be normalized.
+
+        Returns
+        -------
+        str
+            normalized string.
+        """
+        return unidecode(word).lower().strip().replace(".", "")
 
     def refresh_index(self):
         """
@@ -97,7 +113,10 @@ class Similarity:
         """
         for i in work.keys():
             if i != "authors":
-                work[i] = str(work[i])
+                work[i] = self.str_normilize(str(work[i]))
+            else:
+                for i in range(len(work["authors"])):
+                    work["authors"][i] = self.str_normilize(work["authors"][i])
         response = self.es.index(index=self.es_index,  id=_id, document=work)
         self.refresh_index()
         return response
@@ -151,6 +170,8 @@ class Similarity:
         if not isinstance(title, str):
             title = ""
 
+        title = self.str_normilize(title)
+
         if not isinstance(source, str):
             source = ""
 
@@ -162,7 +183,7 @@ class Similarity:
             for author in authors:
                 authors_list.append(
                     {"match": {"authors":  {
-                        "query": author,
+                        "query": self.str_normilize(author),
                         "operator": "AND"
                     }}}
                 )
@@ -261,6 +282,15 @@ class Similarity:
         entries: list 
                 list of works to be inserted
         """
+        for entry in entries:
+            for i in entry["_source"].keys():
+                if i == "authors":
+                    for j in range(len(entry["_source"][i])):
+                        entry["_source"]["authors"][j] = self.str_normilize(
+                            entry["_source"]["authors"][j])
+                if i in ["title", "source"]:
+                    entry["_source"][i] = self.str_normilize(
+                        entry["_source"][i])
         response = bulk(self.es, entries, index=self.es_index,
                         refresh=refresh, request_timeout=self.es_req_timeout)
         self.refresh_index()
