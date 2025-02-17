@@ -36,7 +36,7 @@ class Similarity:
         self.es_req_timeout = es_req_timeout
         self.ensure_index()
 
-    def str_normilize(self, word):
+    def str_normalize(self, word):
         """
         Normalize a string to lowercase and remove accents.
 
@@ -113,10 +113,10 @@ class Similarity:
         """
         for i in work.keys():
             if i != "authors":
-                work[i] = self.str_normilize(str(work[i]))
+                work[i] = self.str_normalize(str(work[i]))
             else:
                 for i in range(len(work["authors"])):
-                    work["authors"][i] = self.str_normilize(work["authors"][i])
+                    work["authors"][i] = self.str_normalize(work["authors"][i])
         response = self.es.index(index=self.es_index,  id=_id, document=work)
         self.refresh_index()
         return response
@@ -170,7 +170,7 @@ class Similarity:
         if not isinstance(title, str):
             title = ""
 
-        title = self.str_normilize(title)
+        title = self.str_normalize(title)
 
         if not isinstance(source, str):
             source = ""
@@ -183,7 +183,7 @@ class Similarity:
             for author in authors:
                 authors_list.append(
                     {"match": {"authors":  {
-                        "query": self.str_normilize(author),
+                        "query": self.str_normalize(author),
                         "operator": "AND"
                     }}}
                 )
@@ -286,10 +286,10 @@ class Similarity:
             for i in entry["_source"].keys():
                 if i == "authors":
                     for j in range(len(entry["_source"][i])):
-                        entry["_source"]["authors"][j] = self.str_normilize(
+                        entry["_source"]["authors"][j] = self.str_normalize(
                             entry["_source"]["authors"][j])
                 if i in ["title", "source"]:
-                    entry["_source"][i] = self.str_normilize(
+                    entry["_source"][i] = self.str_normalize(
                         entry["_source"][i])
         response = bulk(self.es, entries, index=self.es_index,
                         refresh=refresh, request_timeout=self.es_req_timeout)
